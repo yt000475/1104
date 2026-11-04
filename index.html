@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMI & MISTY - 原創設計角色收藏公仔</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- GSAP for Smooth Scroll Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#FFF9F5',
+                        pastelPink: '#FFD6E0',
+                        softPurple: '#E8D7FF',
+                        warmPeach: '#FFEFDF',
+                        accentRose: '#FF70A6',
+                        textDark: '#4A3E4E',
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #FFF9F5;
+            color: #4A3E4E;
+            overflow-x: hidden;
+            font-family: 'Noto Sans TC', 'Fredoka', sans-serif;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FFF9F5;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FFD6E0;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF70A6;
+        }
+
+        /* Glassmorphism Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 214, 224, 0.5);
+        }
+
+        .glass-nav {
+            background: rgba(255, 249, 245, 0.85);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(1deg); }
+        }
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Canvas Wrapper */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through except when interacting */
+        }
+
+        #webgl-container canvas {
+            pointer-events: auto;
+        }
+
+        /* Soft Glow Shadows */
+        .glow-shadow {
+            box-shadow: 0 15px 35px -5px rgba(255, 112, 166, 0.25);
+        }
+        .glow-purple {
+            box-shadow: 0 15px 35px -5px rgba(232, 215, 255, 0.4);
+        }
+
+        /* Badge Ripple Pulse */
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="relative selection:bg-pastelPink selection:text-accentRose">
+
+    <!-- 3D Canvas Background & Interactive Viewer -->
+    <div id="webgl-container"></div>
+
+    <!-- Navigation Bar -->
+    <nav class="fixed top-0 left-0 w-full z-50 glass-nav px-6 py-4 transition-all duration-300 border-b border-pastelPink/30">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <a href="#" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-accentRose to-softPurple flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                    <i class="fa-solid font-fredoka text-lg">✨</i>
+                </div>
+                <span class="font-fredoka text-2xl font-bold tracking-wide bg-gradient-to-r from-accentRose to-purple-600 bg-clip-text text-transparent">LUMI & MISTY</span>
+            </a>
+
+            <!-- Desktop Links -->
+            <div class="hidden md:flex items-center gap-8 font-medium text-sm text-textDark/80">
+                <a href="#hero" class="hover:text-accentRose transition-colors">首頁展示</a>
+                <a href="#story" class="hover:text-accentRose transition-colors">角色故事</a>
+                <a href="#features" class="hover:text-accentRose transition-colors">精緻細節</a>
+                <a href="#specs" class="hover:text-accentRose transition-colors">收藏規格</a>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="flex items-center gap-3">
+                <a href="#specs" class="px-5 py-2.5 rounded-full bg-gradient-to-r from-accentRose to-pink-400 text-white font-fredoka font-medium text-sm hover:opacity-90 transition-all shadow-lg shadow-pink-200 hover:scale-105 active:scale-95">
+                    立即收藏 <i class="fa-solid fa-heart ml-1 text-xs"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- UI Overlay Content Sections -->
+    <main class="relative z-20">
+
+        <!-- 1. HERO SECTION -->
+        <section id="hero" class="min-h-screen flex items-center justify-between px-6 pt-24 pb-12 max-w-6xl mx-auto pointer-events-none">
+            <div class="w-full lg:w-1/2 pointer-events-auto space-y-6">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-softPurple/50 border border-purple-200 text-purple-700 text-xs font-semibold tracking-wider uppercase">
+                    <span class="w-2 h-2 rounded-full bg-accentRose animate-ping"></span>
+                    2026 全新原創限量發售
+                </div>
+                <h1 class="font-fredoka text-5xl md:text-6xl font-bold leading-tight text-textDark">
+                    夢境中的守護者 <br>
+                    <span class="bg-gradient-to-r from-accentRose via-purple-500 to-indigo-400 bg-clip-text text-transparent">「星月之靈 Lumi」</span>
+                </h1>
+                <p class="text-textDark/70 text-lg leading-relaxed max-w-md">
+                    柔和夢幻的配色與溫暖的立體質感。拖曳滑鼠 360° 全方位探索屬於你的療癒小夥伴。
+                </p>
+
+                <div class="flex flex-wrap items-center gap-4 pt-2">
+                    <button id="btn-reset-view" class="px-6 py-3 rounded-full glass-card hover:bg-white text-textDark font-medium text-sm transition-all flex items-center gap-2 shadow-sm border border-pastelPink/60 hover:shadow-md">
+                        <i class="fa-solid fa-rotate text-accentRose"></i> 重置 3D 視角
+                    </button>
+                    <div class="text-xs text-textDark/60 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-pointer animate-bounce text-accentRose text-sm"></i>
+                        拖曳可 360° 旋轉公仔
+                    </div>
+                </div>
+
+                <!-- Color Variant Switcher -->
+                <div class="pt-6 border-t border-pastelPink/40">
+                    <span class="text-xs font-semibold text-textDark/60 uppercase tracking-wider block mb-3">選擇主題色彩（3D 即時換裝）：</span>
+                    <div class="flex items-center gap-3">
+                        <button onclick="changeColorTheme('pink')" class="w-9 h-9 rounded-full bg-gradient-to-tr from-pink-300 to-purple-200 border-2 border-white shadow-md hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-accentRose" title="經典粉紫"></button>
+                        <button onclick="changeColorTheme('mint')" class="w-9 h-9 rounded-full bg-gradient-to-tr from-teal-200 to-yellow-100 border-2 border-white shadow-md hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-teal-400" title="薄荷奶油"></button>
+                        <button onclick="changeColorTheme('galaxy')" class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-300 border-2 border-white shadow-md hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-indigo-400" title="夢幻星雲"></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty right side to balance 3D model layout on desktop -->
+            <div class="hidden lg:block w-1/2 min-h-[500px]"></div>
+        </section>
+
+
+        <!-- 2. ROLE STORY & CONCEPT SECTION -->
+        <section id="story" class="min-h-screen flex items-center px-6 py-20 max-w-6xl mx-auto">
+            <div class="w-full grid md:grid-cols-2 gap-12 items-center">
+                <!-- Spacer for 3D model positioned on the left during scroll -->
+                <div class="hidden md:block"></div>
+
+                <div class="glass-card p-8 md:p-10 rounded-4xl glow-shadow space-y-6">
+                    <div class="inline-block px-3 py-1 rounded-full bg-pastelPink/60 text-accentRose text-xs font-bold">
+                        DESIGN CONCEPT
+                    </div>
+                    <h2 class="font-fredoka text-3xl md:text-4xl font-bold text-textDark">
+                        角色背景與設計理念
+                    </h2>
+                    <p class="text-textDark/80 leading-relaxed">
+                        Lumi 誕生於繁星滿載的溫柔夢境中，頭頂帶著閃耀的光環帽子，胸前配戴著幸運星水晶。
+                    </p>
+                    <p class="text-textDark/80 leading-relaxed">
+                        設計團隊經過數百次雕塑修整，將圓潤無害的可愛線條與微亮霧面質感完美結合。不論是擺放在書桌一角，或是收藏於玻璃櫃中，都能為繁忙的生活帶來滿滿的療癒感。
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-4 pt-4 border-t border-pastelPink/40">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-warmPeach flex items-center justify-center text-amber-500">
+                                <i class="fa-solid fa-palette"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs text-textDark/60">配色哲學</h4>
+                                <p class="text-sm font-bold text-textDark">馬卡龍柔和調</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-softPurple flex items-center justify-center text-purple-600">
+                                <i class="fa-solid fa-sparkles"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs text-textDark/60">原創特徵</h4>
+                                <p class="text-sm font-bold text-textDark">星月配件耳飾</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 3. DETAILED FEATURES SECTION -->
+        <section id="features" class="min-h-screen flex items-center px-6 py-20 max-w-6xl mx-auto">
+            <div class="w-full">
+                <div class="text-center max-w-2xl mx-auto mb-16 space-y-3">
+                    <span class="px-4 py-1.5 rounded-full bg-softPurple/60 text-purple-700 text-xs font-bold uppercase tracking-wider">
+                        CRAFT & ACCESSORIES
+                    </span>
+                    <h2 class="font-fredoka text-3xl md:text-4xl font-bold text-textDark">
+                        精緻立體造型與質感細節
+                    </h2>
+                    <p class="text-textDark/70 text-sm">
+                        滾動頁面時，3D 公仔將自動移動切換角度，點擊卡片可高亮特定材質細節。
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Feature 1 -->
+                    <div onclick="focusPart('head')" class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition-all cursor-pointer group border border-pastelPink/50 hover:border-accentRose glow-purple">
+                        <div class="w-12 h-12 rounded-2xl bg-pastelPink/60 flex items-center justify-center text-accentRose text-xl mb-4 group-hover:scale-110 transition-transform">
+                            👑
+                        </div>
+                        <h3 class="font-fredoka text-xl font-bold text-textDark mb-2">星月夢幻皇冠</h3>
+                        <p class="text-textDark/70 text-sm leading-relaxed">
+                            採用半透明星光塗層，在光線折射下呈現優雅的珍珠光澤。
+                        </p>
+                        <div class="mt-4 flex items-center gap-1 text-xs text-accentRose font-medium">
+                            聚焦查看 3D 細節 <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div onclick="focusPart('star')" class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition-all cursor-pointer group border border-pastelPink/50 hover:border-accentRose glow-purple">
+                        <div class="w-12 h-12 rounded-2xl bg-warmPeach flex items-center justify-center text-amber-500 text-xl mb-4 group-hover:scale-110 transition-transform">
+                            ⭐
+                        </div>
+                        <h3 class="font-fredoka text-xl font-bold text-textDark mb-2">幸運星魔棒</h3>
+                        <p class="text-textDark/70 text-sm leading-relaxed">
+                            獨立可拆卸磁吸配件，手持配件使用高質感鍍金工藝處理。
+                        </p>
+                        <div class="mt-4 flex items-center gap-1 text-xs text-accentRose font-medium">
+                            聚焦查看 3D 細節 <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div onclick="focusPart('body')" class="glass-card p-6 rounded-3xl hover:-translate-y-2 transition-all cursor-pointer group border border-pastelPink/50 hover:border-accentRose glow-purple">
+                        <div class="w-12 h-12 rounded-2xl bg-softPurple flex items-center justify-center text-purple-500 text-xl mb-4 group-hover:scale-110 transition-transform">
+                            🧸
+                        </div>
+                        <h3 class="font-fredoka text-xl font-bold text-textDark mb-2">親膚陶瓷質感塗層</h3>
+                        <p class="text-textDark/70 text-sm leading-relaxed">
+                            高級 ABS/PVC 材質打造，觸感滑順細緻，耐磨不易褪色。
+                        </p>
+                        <div class="mt-4 flex items-center gap-1 text-xs text-accentRose font-medium">
+                            聚焦查看 3D 細節 <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 4. PRODUCT SPECS & PURCHASE SECTION -->
+        <section id="specs" class="min-h-screen flex items-center px-6 py-20 max-w-6xl mx-auto">
+            <div class="w-full grid lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Specs Info Box -->
+                <div class="glass-card p-8 md:p-10 rounded-4xl shadow-xl space-y-6 border border-pastelPink">
+                    <div>
+                        <span class="text-xs font-bold text-accentRose tracking-wider uppercase">PRODUCT INFORMATION</span>
+                        <h2 class="font-fredoka text-3xl font-bold text-textDark mt-1">收藏資訊與規格</h2>
+                    </div>
+
+                    <div class="space-y-4 divide-y divide-pastelPink/30 text-sm">
+                        <div class="flex justify-between pt-2">
+                            <span class="text-textDark/60">角色名稱</span>
+                            <span class="font-semibold text-textDark">Lumi 星月之靈 (原創第一彈)</span>
+                        </div>
+                        <div class="flex justify-between pt-3">
+                            <span class="text-textDark/60">產品尺寸</span>
+                            <span class="font-semibold text-textDark">高約 15cm × 寬約 10cm</span>
+                        </div>
+                        <div class="flex justify-between pt-3">
+                            <span class="text-textDark/60">製作材質</span>
+                            <span class="font-semibold text-textDark">高級 PVC / ABS / 磁吸金屬配件</span>
+                        </div>
+                        <div class="flex justify-between pt-3">
+                            <span class="text-textDark/60">包裝內容</span>
+                            <span class="font-semibold text-textDark">公仔主體、幸運星配件、專屬收藏卡 (附獨立編號)</span>
+                        </div>
+                        <div class="flex justify-between pt-3">
+                            <span class="text-textDark/60">建議適用年齡</span>
+                            <span class="font-semibold text-textDark">15 歲以上收藏玩家</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 bg-warmPeach/50 p-4 rounded-2xl flex items-center gap-4">
+                        <div class="text-3xl">🎁</div>
+                        <div class="text-xs text-textDark/80">
+                            <span class="font-bold block text-textDark text-sm">首批預購獨家特典</span>
+                            前 500 名預購者額外贈送「星光禮盒展示台」乙個。
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-pastelPink">
+                        <div>
+                            <span class="text-xs text-textDark/60 block">預售收藏價</span>
+                            <span class="font-fredoka text-3xl font-bold text-accentRose">NT$ 1,880</span>
+                        </div>
+                        <button onclick="showBuyModal()" class="px-8 py-4 rounded-full bg-gradient-to-r from-accentRose to-purple-500 text-white font-fredoka font-bold shadow-lg shadow-pink-300 hover:scale-105 active:scale-95 transition-all">
+                            立即預購收藏
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive 3D Callout Card on the right -->
+                <div class="glass-card p-8 rounded-4xl text-center space-y-4 glow-purple border border-softPurple">
+                    <div class="w-16 h-16 rounded-full bg-softPurple mx-auto flex items-center justify-center text-2xl text-purple-600">
+                        ✨
+                    </div>
+                    <h3 class="font-fredoka text-2xl font-bold text-textDark">準備好帶 Lumi 回家了嗎？</h3>
+                    <p class="text-textDark/70 text-sm max-w-sm mx-auto">
+                        每一尊公仔均經過人工精細塗裝與嚴格品質檢驗，確保最佳收藏質感。
+                    </p>
+                    <div class="pt-2">
+                        <img src="https://placehold.co/400x200/FFD6E0/FF70A6?text=Lumi+Collector+Box" alt="禮盒展示" class="rounded-2xl mx-auto shadow-sm w-full max-w-xs object-cover" onerror="this.style.display='none'">
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="relative z-20 bg-white/80 border-t border-pastelPink/50 py-12 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-accentRose text-white flex items-center justify-center font-fredoka text-sm">✨</div>
+                <span class="font-fredoka font-bold text-xl text-textDark">LUMI STUDIO</span>
+                <span class="text-xs text-textDark/50">© 2026 All Rights Reserved.</span>
+            </div>
+
+            <!-- Social Links -->
+            <div class="flex items-center gap-6 text-textDark/70">
+                <a href="#" class="hover:text-accentRose transition-colors text-lg" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="#" class="hover:text-accentRose transition-colors text-lg" title="Twitter/X"><i class="fa-brands fa-x-twitter"></i></a>
+                <a href="#" class="hover:text-accentRose transition-colors text-lg" title="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                <a href="#" class="hover:text-accentRose transition-colors text-lg" title="Discord"><i class="fa-brands fa-discord"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Buy Modal Window (Custom Non-Alert Popup) -->
+    <div id="buyModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-card bg-white p-8 rounded-4xl max-w-md w-full mx-4 shadow-2xl border border-pastelPink text-center space-y-4 transform scale-95 transition-transform duration-300" id="modalContent">
+            <div class="w-16 h-16 rounded-full bg-pastelPink/60 text-accentRose text-3xl mx-auto flex items-center justify-center">
+                💖
+            </div>
+            <h3 class="font-fredoka text-2xl font-bold text-textDark">預購成功確認</h3>
+            <p class="text-textDark/70 text-sm">
+                感謝您對「LUMI 星月之靈」原創公仔的支持！已將預購項目加入您的收藏清單。
+            </p>
+            <div class="bg-warmPeach/60 p-3 rounded-xl text-xs text-textDark/80">
+                預計發貨時間：2026 年 Q3 季末 (將依預購順序發送)
+            </div>
+            <button onclick="closeBuyModal()" class="w-full py-3 rounded-full bg-accentRose text-white font-fredoka font-bold hover:opacity-90 transition-opacity">
+                太棒了！
+            </button>
+        </div>
+    </div>
+
+
+    <!-- 3D WebGL Script with Three.js -->
+    <script>
+        // Global variables for Three.js
+        let scene, camera, renderer, controls;
+        let figureGroup, headMesh, bodyMesh, hatMesh, starMesh, eyeLeft, eyeRight;
+        let materials = {};
+        let currentTheme = 'pink';
+
+        // Mouse movement target for soft tilt
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+
+        // Initialize 3D Scene
+        function init3D() {
+            const container = document.getElementById('webgl-container');
+
+            // 1. Scene
+            scene = new THREE.Scene();
+
+            // 2. Camera
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1, 9);
+
+            // 3. Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 4. Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = false; // Keep scroll smooth
+            controls.maxPolarAngle = Math.PI / 1.8;
+            controls.minPolarAngle = Math.PI / 3;
+
+            // 5. Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(ambientLight);
+
+            // Main Soft Directional Light
+            const dirLight = new THREE.DirectionalLight(0xfff0f5, 1.2);
+            dirLight.position.set(5, 8, 5);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // Purple Accent Rim Light
+            const rimLight = new THREE.DirectionalLight(0xe8d7ff, 0.8);
+            rimLight.position.set(-5, 3, -5);
+            scene.add(rimLight);
+
+            // Warm Bottom Fill Light
+            const fillLight = new THREE.PointLight(0xffefdf, 0.6, 10);
+            fillLight.position.set(0, -2, 3);
+            scene.add(fillLight);
+
+            // 6. Build Toy Figure (Cute Designer Toy)
+            createDesignerToy();
+
+            // 7. Ground Soft Shadow Plane
+            const shadowGeo = new THREE.PlaneGeometry(6, 6);
+            const shadowMat = new THREE.ShadowMaterial({ opacity: 0.15 });
+            const shadowPlane = new THREE.Mesh(shadowGeo, shadowMat);
+            shadowPlane.rotation.x = -Math.PI / 2;
+            shadowPlane.position.y = -2.2;
+            shadowPlane.receiveShadow = true;
+            scene.add(shadowPlane);
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('mousemove', onMouseMove);
+
+            // Start Animation Loop
+            animate();
+        }
+
+        // Color Palettes
+        const colorThemes = {
+            pink: {
+                body: 0xFFD6E0,
+                dress: 0xE8D7FF,
+                hat: 0xFF70A6,
+                star: 0xFFD166,
+                accent: 0xFF9EE2
+            },
+            mint: {
+                body: 0xE0F2FE,
+                dress: 0xCCFBF1,
+                hat: 0x2DD4BF,
+                star: 0xFDE047,
+                accent: 0x5EEAD4
+            },
+            galaxy: {
+                body: 0xC084FC,
+                dress: 0x818CF8,
+                hat: 0x4F46E5,
+                star: 0xFACC15,
+                accent: 0xA855F7
+            }
+        };
+
+        // Construct 3D Cute Toy Geometry using Primitive Combinations
+        function createDesignerToy() {
+            figureGroup = new THREE.Group();
+            figureGroup.position.y = -0.5;
+
+            // Base Materials
+            const palette = colorThemes.pink;
+
+            materials.bodyMat = new THREE.MeshStandardMaterial({
+                color: palette.body,
+                roughness: 0.25,
+                metalness: 0.05
+            });
+
+            materials.dressMat = new THREE.MeshStandardMaterial({
+                color: palette.dress,
+                roughness: 0.3,
+            });
+
+            materials.hatMat = new THREE.MeshStandardMaterial({
+                color: palette.hat,
+                roughness: 0.2,
+            });
+
+            materials.starMat = new THREE.MeshStandardMaterial({
+                color: palette.star,
+                roughness: 0.1,
+                metalness: 0.4,
+                emissive: 0xffe600,
+                emissiveIntensity: 0.2
+            });
+
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x3A2E39 });
+
+            // A. Head (Sphere + Slightly Scaled)
+            const headGeo = new THREE.SphereGeometry(1.2, 32, 32);
+            headMesh = new THREE.Mesh(headGeo, materials.bodyMat);
+            headMesh.position.y = 1.3;
+            headMesh.castShadow = true;
+            figureGroup.add(headMesh);
+
+            // Eyes (Cute rounded ovals)
+            const eyeGeo = new THREE.SphereGeometry(0.12, 16, 16);
+            eyeGeo.scale(1, 1.3, 0.4);
+
+            eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeLeft.position.set(-0.35, 1.35, 1.1);
+            eyeLeft.rotation.y = -0.2;
+            figureGroup.add(eyeLeft);
+
+            eyeRight = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeRight.position.set(0.35, 1.35, 1.1);
+            eyeRight.rotation.y = 0.2;
+            figureGroup.add(eyeRight);
+
+            // Eye Highlights
+            const highlightGeo = new THREE.SphereGeometry(0.04, 8, 8);
+            const highlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const hl1 = new THREE.Mesh(highlightGeo, highlightMat);
+            hl1.position.set(-0.32, 1.4, 1.15);
+            figureGroup.add(hl1);
+            const hl2 = new THREE.Mesh(highlightGeo, highlightMat);
+            hl2.position.set(0.38, 1.4, 1.15);
+            figureGroup.add(hl2);
+
+            // Cute Blush Cheeks
+            const blushGeo = new THREE.SphereGeometry(0.15, 16, 16);
+            blushGeo.scale(1.2, 0.6, 0.3);
+            const blushMat = new THREE.MeshBasicMaterial({ color: 0xFF70A6, transparent: true, opacity: 0.5 });
+            const blushL = new THREE.Mesh(blushGeo, blushMat);
+            blushL.position.set(-0.55, 1.15, 1.05);
+            figureGroup.add(blushL);
+            const blushR = new THREE.Mesh(blushGeo, blushMat);
+            blushR.position.set(0.55, 1.15, 1.05);
+            figureGroup.add(blushR);
+
+            // B. Cute Hat (Cone + Spherical Top)
+            const hatGeo = new THREE.ConeGeometry(1.0, 1.1, 32);
+            hatMesh = new THREE.Mesh(hatGeo, materials.hatMat);
+            hatMesh.position.set(0, 2.3, 0);
+            hatMesh.rotation.x = -0.1;
+            hatMesh.castShadow = true;
+            figureGroup.add(hatMesh);
+
+            // Hat Pom-pom
+            const pomGeo = new THREE.SphereGeometry(0.22, 16, 16);
+            const pomMesh = new THREE.Mesh(pomGeo, materials.starMat);
+            pomMesh.position.set(0, 2.9, -0.1);
+            figureGroup.add(pomMesh);
+
+            // C. Body & Dress (Cone/Cylinder mix)
+            const bodyGeo = new THREE.CylinderGeometry(0.6, 1.1, 1.4, 32);
+            bodyMesh = new THREE.Mesh(bodyGeo, materials.dressMat);
+            bodyMesh.position.y = 0.1;
+            bodyMesh.castShadow = true;
+            figureGroup.add(bodyMesh);
+
+            // Dress Collar / Ribbon
+            const collarGeo = new THREE.TorusGeometry(0.65, 0.1, 16, 32);
+            const collarMesh = new THREE.Mesh(collarGeo, materials.hatMat);
+            collarMesh.rotation.x = Math.PI / 2;
+            collarMesh.position.y = 0.75;
+            figureGroup.add(collarMesh);
+
+            // D. Arms (Capsule-like Cylinders)
+            const armGeo = new THREE.CylinderGeometry(0.18, 0.15, 0.7, 16);
+            const armL = new THREE.Mesh(armGeo, materials.bodyMat);
+            armL.position.set(-0.85, 0.2, 0);
+            armL.rotation.z = 0.4;
+            figureGroup.add(armL);
+
+            const armR = new THREE.Mesh(armGeo, materials.bodyMat);
+            armR.position.set(0.85, 0.2, 0);
+            armR.rotation.z = -0.4;
+            figureGroup.add(armR);
+
+            // E. Lucky Star Accessory Wand (Held in Right Hand)
+            const starGroup = new THREE.Group();
+            
+            // Star Mesh (Simple Extruded or Octahedron Shape)
+            const starShapeGeo = new THREE.OctahedronGeometry(0.35, 0);
+            starMesh = new THREE.Mesh(starShapeGeo, materials.starMat);
+            starMesh.scale.set(1, 1, 0.5);
+            starGroup.add(starMesh);
+
+            // Wand Handle
+            const wandGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.9, 12);
+            const wandMat = new THREE.MeshStandardMaterial({ color: 0xFFD166, roughness: 0.2 });
+            const wandMesh = new THREE.Mesh(wandGeo, wandMat);
+            wandMesh.position.y = -0.45;
+            starGroup.add(wandMesh);
+
+            starGroup.position.set(1.1, 0.3, 0.3);
+            starGroup.rotation.z = -0.2;
+            figureGroup.add(starGroup);
+
+            scene.add(figureGroup);
+        }
+
+        // Change Color Theme dynamically
+        function changeColorTheme(themeName) {
+            if (!colorThemes[themeName]) return;
+            currentTheme = themeName;
+            const t = colorThemes[themeName];
+
+            gsap.to(materials.bodyMat.color, {
+                r: ((t.body >> 16) & 255) / 255,
+                g: ((t.body >> 8) & 255) / 255,
+                b: (t.body & 255) / 255,
+                duration: 0.8
+            });
+
+            gsap.to(materials.dressMat.color, {
+                r: ((t.dress >> 16) & 255) / 255,
+                g: ((t.dress >> 8) & 255) / 255,
+                b: (t.dress & 255) / 255,
+                duration: 0.8
+            });
+
+            gsap.to(materials.hatMat.color, {
+                r: ((t.hat >> 16) & 255) / 255,
+                g: ((t.hat >> 8) & 255) / 255,
+                b: (t.hat & 255) / 255,
+                duration: 0.8
+            });
+        }
+
+        // Mouse Move Listener for subtle head tilt
+        function onMouseMove(event) {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        // Window Resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Subtle Idle Breathing Floating Animation
+            const time = Date.now() * 0.002;
+            if (figureGroup) {
+                figureGroup.position.y = -0.5 + Math.sin(time) * 0.08;
+                
+                // Mouse follow tilt (lagged blend)
+                targetRotationY = mouseX * 0.25;
+                targetRotationX = -mouseY * 0.15;
+
+                figureGroup.rotation.y += (targetRotationY - figureGroup.rotation.y) * 0.05;
+                figureGroup.rotation.x += (targetRotationX - figureGroup.rotation.x) * 0.05;
+            }
+
+            // Star rotation
+            if (starMesh) {
+                starMesh.rotation.y += 0.02;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // 3D Focus Interaction Points
+        function focusPart(part) {
+            if (!figureGroup) return;
+
+            if (part === 'head') {
+                gsap.to(camera.position, { x: 0, y: 1.2, z: 4.5, duration: 1.2, ease: "power2.out" });
+                gsap.to(figureGroup.rotation, { y: 0.3, duration: 1 });
+            } else if (part === 'star') {
+                gsap.to(camera.position, { x: 1.2, y: 0.2, z: 4.0, duration: 1.2, ease: "power2.out" });
+                gsap.to(figureGroup.rotation, { y: -0.5, duration: 1 });
+            } else if (part === 'body') {
+                gsap.to(camera.position, { x: 0, y: -0.2, z: 5.0, duration: 1.2, ease: "power2.out" });
+                gsap.to(figureGroup.rotation, { y: 0, duration: 1 });
+            }
+        }
+
+        // Scroll Driven 3D Animations Setup with GSAP ScrollTrigger
+        function setupScrollAnimations() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Section 1 -> Section 2 (Story)
+            ScrollTrigger.create({
+                trigger: "#story",
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => {
+                    // Move toy to left side of screen
+                    gsap.to(figureGroup.position, { x: -1.8, duration: 1.2, ease: "power2.out" });
+                    gsap.to(figureGroup.rotation, { y: Math.PI * 0.25, duration: 1.2 });
+                    gsap.to(camera.position, { x: 0, y: 0.5, z: 7.5, duration: 1.2 });
+                },
+                onLeaveBack: () => {
+                    // Reset to center for Hero
+                    gsap.to(figureGroup.position, { x: 0, duration: 1.2, ease: "power2.out" });
+                    gsap.to(figureGroup.rotation, { y: 0, duration: 1.2 });
+                    gsap.to(camera.position, { x: 0, y: 1, z: 9, duration: 1.2 });
+                }
+            });
+
+            // Section 3 (Features)
+            ScrollTrigger.create({
+                trigger: "#features",
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => {
+                    gsap.to(figureGroup.position, { x: 0, y: 0.2, duration: 1.2, ease: "power2.out" });
+                    gsap.to(figureGroup.rotation, { y: -Math.PI * 0.3, duration: 1.2 });
+                    gsap.to(camera.position, { x: 0, y: 0.8, z: 6.5, duration: 1.2 });
+                }
+            });
+
+            // Section 4 (Specs & Buy)
+            ScrollTrigger.create({
+                trigger: "#specs",
+                start: "top center",
+                onEnter: () => {
+                    gsap.to(figureGroup.position, { x: 1.8, y: -0.2, duration: 1.2, ease: "power2.out" });
+                    gsap.to(figureGroup.rotation, { y: Math.PI * 2, duration: 1.5, ease: "power2.inOut" });
+                    gsap.to(camera.position, { x: 0, y: 0.5, z: 7.0, duration: 1.2 });
+                }
+            });
+        }
+
+        // Reset Camera View Button
+        document.getElementById('btn-reset-view')?.addEventListener('click', () => {
+            gsap.to(camera.position, { x: 0, y: 1, z: 9, duration: 1 });
+            gsap.to(figureGroup.position, { x: 0, y: -0.5, duration: 1 });
+            gsap.to(figureGroup.rotation, { x: 0, y: 0, z: 0, duration: 1 });
+        });
+
+        // Purchase Modal Logic
+        function showBuyModal() {
+            const modal = document.getElementById('buyModal');
+            const modalContent = document.getElementById('modalContent');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('scale-95');
+            modalContent.classList.add('scale-100');
+        }
+
+        function closeBuyModal() {
+            const modal = document.getElementById('buyModal');
+            const modalContent = document.getElementById('modalContent');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+        }
+
+        // Initialize Everything on Load
+        window.onload = function () {
+            init3D();
+            setupScrollAnimations();
+        };
+    </script>
+</body>
+</html>
